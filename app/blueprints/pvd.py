@@ -280,6 +280,7 @@ def task_new(plan_id):
         errors = _task_from_form(task, request.form, plan)
         if not errors:
             task.plan = plan
+            db.session.add(task)
             audit(f"Добавлена задача «{task.title}»", g.user.short_name, plan)
             db.session.commit()
             return redirect(_task_back(task))

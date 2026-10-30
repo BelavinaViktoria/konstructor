@@ -125,10 +125,10 @@ def test_all_ipr_and_admin_screens_render(login):
 
 def test_admin_user_and_library(login, app):
     client = login(LEARNING)
-    client.post("/admin/users", data={"full_name": "Новый Сотрудник", "email": "New@Example.com", "role": "mentor", "password": "short"})
-    assert not User.query.filter_by(email="new@example.com").first()
-    client.post("/admin/users", data={"full_name": "Новый Сотрудник Петрович", "email": "New@Example.com", "role": "mentor", "password": "long-enough-pass"})
-    created = User.query.filter_by(email="new@example.com").one()
+    client.post("/admin/users", data={"full_name": "Новый Сотрудник", "email": "Created@Example.com", "role": "mentor", "password": "short"})
+    assert not User.query.filter_by(email="created@example.com").first()
+    client.post("/admin/users", data={"full_name": "Новый Сотрудник Петрович", "email": "Created@Example.com", "role": "mentor", "password": "long-enough-pass"})
+    created = User.query.filter_by(email="created@example.com").one()
     assert created.short_name == "Новый С. П."
     client.post(f"/admin/users/{created.id}/toggle")
     assert created.active is False
