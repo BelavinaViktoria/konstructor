@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Конструктор ИПР</h2><p>{{ ipr.fio }} → {{ ipr.target or 'целевая должность не указана' }} · <span class="chip {{ cat.IPR_STATUS_CHIP[ipr.status] }}">{{ ipr.status }}</span></p></div>
+<div class="actions"><a class="btn" href="{{ url_for('ipr.card', ipr_id=ipr.id) }}">Карточка ИПР</a>{{ m.post(url_for('ipr.send', ipr_id=ipr.id), 'Отправить руководителю', 'btn primary') }}</div></div>
+{% if ipr.return_comment %}<div class="note warn">Руководитель вернул ИПР: {{ ipr.return_comment }}</div>{% endif %}
+{% if errors %}<div class="note info">Перед отправкой: <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<details class="card" open><summary>Данные о резервисте</summary><form method="post" action="{{ url_for('ipr.data', ipr_id=ipr.id) }}">{{ m.csrf() }}<br>{% include "ipr/_data.html" %}<div class="actions"><button class="btn primary">Сохранить</button></div></form></details>
+
+<div class="card"><h3>Тест Talent Q{% if not needs_tq %} <span class="chip">не требуется для линейных сотрудников</span>{% endif %}</h3>
+  <form method="post" action="{{ url_for('ipr.talentq', ipr_id=ipr.id) }}">{{ m.csrf() }}<div class="fields">
+    <div class="f"><label>Ссылка отправлена</label><input type="date" name="tq_sent" value="{{ ipr.tq_sent.isoformat() if ipr.tq_sent else '' }}"></div>
+    <div class="f"><label>Тест пройден</label><input type="date" name="tq_done" value="{{ ipr.tq_done.isoformat() if ipr.tq_done else '' }}"></div>
+    <div class="f full"><label>Результаты: навык; факт; цель (каждый с новой строки)</label><textarea name="tq_rows">{% for r in ipr.tq_rows or [] %}{{ r[0] }}; {{ r[1] }}; {{ r[2] }}
+{% endfor %}</textarea></div></div><div class="actions"><button class="btn primary">Сохранить</button></div></form>
+</div>
+
+<div class="card"><h3>Профиль должности и навыки · выбрано: профессиональных {{ selected_hard }} из {{ cat.IPR_N_HARD }}, личных {{ selected_soft }} из {{ cat.IPR_N_SOFT }}</h3>
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('ipr.skills_parse', ipr_id=ipr.id) }}">{{ m.csrf() }}<div class="fields"><div class="f"><label>Должностная инструкция (.docx, .txt)</label><input type="file" name="file" accept=".docx,.txt"></div><div class="f"><label>или текст</label><textarea name="text"></textarea></div></div><div class="actions"><button class="btn ai">Составить профиль должности</button></div></form>
+  {% if ipr.skills %}<form method="post" action="{{ url_for('ipr.skills_select', ipr_id=ipr.id) }}">{{ m.csrf() }}<br>
+  {% for kind, title in (('hard', 'Профессиональные'), ('soft', 'Личные')) %}<h4>{{ title }}</h4>{% for s in ipr.skills if s.kind == kind %}<div><label><input type="checkbox" name="skill" value="{{ s.id }}" {{ 'checked' if s.selected }}> {{ s.title }}</label>{% if s.rationale %} <span class="hint">{{ s.rationale }}</span>{% endif %}</div>{% endfor %}{% endfor %}
+  <div class="actions"><button class="btn primary">Сохранить выбор</button></div></form>{% endif %}
+  <form method="post" action="{{ url_for('ipr.skill_add', ipr_id=ipr.id) }}">{{ m.csrf() }}<div class="fields"><div class="f"><label>Новый навык</label><input name="title"></div><div class="f"><label>Вид</label><select name="kind"><option value="hard">Профессиональный</option><option value="soft">Личный</option></select></div></div><div class="actions"><button class="btn">Добавить навык</button></div></form>
+</div>
+
+<div class="grid-2">
+  <div class="card"><h3>Онлайн-обучение</h3>
+    {% for c in ipr.courses %}<div class="log"><b>{{ c.title }}</b>{% if c.assigned %} <span class="chip c-green">Обучение назначено</span>{% endif %} {{ m.post(url_for('ipr.course_delete', course_id=c.id), 'Убрать', 'btn sm danger') }}</div>{% else %}<p class="hint">Курсов нет</p>{% endfor %}
+    <form method="post" action="{{ url_for('ipr.course_add', ipr_id=ipr.id) }}">{{ m.csrf() }}<div class="fields"><div class="f"><label>Курс</label><input name="title" list="courses"><datalist id="courses">{% for t in cat.IPR_RECORDED_COURSES %}<option value="{{ t }}">{% endfor %}</datalist></div><div class="f"><label>Ссылка</label><input name="url"></div></div><div class="actions"><button class="btn">Добавить курс</button></div></form>
+  </div>
+  <div class="card"><h3>Практический блок</h3>
+    {% for p in ipr.practices %}<div class="log"><b>{{ p.title }}</b><span>{{ p.result }} · срок {{ p.due_date|d }}</span></div>{% else %}<p class="hint">Заданий нет</p>{% endfor %}
+    <div class="actions">{% if not ipr.practices %}{{ m.post(url_for('ipr.practices_defaults', ipr_id=ipr.id), 'Подставить типовые задания') }}{% endif %}</div>
+    <form method="post" action="{{ url_for('ipr.practice_add', ipr_id=ipr.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Задание</label><textarea name="title"></textarea></div><div class="f"><label>Результат</label><input name="result"></div><div class="f"><label>Срок</label><input type="date" name="due_date"></div></div><div class="actions"><button class="btn">Добавить задание</button></div></form>
+  </div>
+  <div class="card"><h3>Литература</h3>
+    {% for b in ipr.books %}<div class="log"><b>{{ b.title }}</b><span>{{ b.author }}{% if b.skill %} · {{ b.skill }}{% endif %}</span></div>{% else %}<p class="hint">Подбирается автоматически по выбранным навыкам.</p>{% endfor %}
+    <form method="post" action="{{ url_for('ipr.book_add', ipr_id=ipr.id) }}">{{ m.csrf() }}<div class="fields"><div class="f"><label>Книга</label><input name="title"></div><div class="f"><label>Автор</label><input name="author"></div></div><div class="actions"><button class="btn">Добавить</button></div></form>
+  </div>
+  <div class="card"><h3>Алгоритм программы</h3>
+    {% for mt in ipr.meetings %}<div class="log"><b>{{ cat.IPR_MEET_TITLES[mt.kind] }}</b><span>{{ mt.effective_date|d }}</span></div>{% else %}<p class="hint">Укажите дату первичной встречи: остальные даты рассчитаются автоматически.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

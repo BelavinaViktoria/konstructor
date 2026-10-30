@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><h2>Уведомления</h2>{{ m.post(url_for('auth.notifications_read_all'), 'Отметить все прочитанными') }}</div>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Когда</th><th>Тема</th><th>Текст</th><th></th></tr></thead><tbody>
+{% for n in rows %}
+<tr class="{{ 'r-amber' if not n.read_at }}"><td>{{ n.created_at.strftime('%d.%m.%Y %H:%M') }}</td><td><b>{{ n.subject }}</b></td><td>{{ n.body }}</td>
+<td>{% if n.link %}{{ m.post(url_for('auth.notification_open', note_id=n.id), 'Открыть') }}{% endif %}</td></tr>
+{% else %}<tr><td colspan="4" class="empty">Уведомлений нет</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

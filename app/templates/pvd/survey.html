@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>{{ survey.name }}</h2><p>{{ plan.fio }}</p></div><a class="btn" href="{{ url_for('pvd.plan_view', plan_id=plan.id) }}">К плану</a></div>
+{% if existing %}
+<div class="note info">Заполнено {{ existing.submitted_at.strftime('%d.%m.%Y %H:%M') }}.</div>
+<div class="tbl-wrap"><table class="tbl"><tbody>{% for q, a in existing.answers.items() %}<tr><td>{{ q }}</td><td><b>{{ a or '—' }}</b></td></tr>{% endfor %}</tbody></table></div>
+{% else %}
+<div class="note info">{{ intro }}</div>
+<form class="card" method="post">{{ m.csrf() }}
+{% for q in survey.q %}{% set name = 'q' ~ loop.index0 %}
+  {% if q.ty == 'one' %}<div class="f" style="margin-bottom:14px"><label for="{{ name }}">{{ q.t }}{% if q.req %} *{% endif %}</label><select id="{{ name }}" name="{{ name }}" {{ 'required' if q.req }}><option value="">— выберите —</option>{% for o in q.opts %}<option>{{ o }}</option>{% endfor %}</select></div>
+  {% elif q.ty == 'many' %}<fieldset class="f" style="margin-bottom:14px;border:none"><label>{{ q.t }}{% if q.req %} *{% endif %}</label>{% for o in q.opts %}<div><label style="font-weight:400;color:inherit"><input type="checkbox" name="{{ name }}" value="{{ o }}" style="width:auto"> {{ o }}</label></div>{% endfor %}</fieldset>
+  {% elif q.ty == 'know' %}<div class="f" style="margin-bottom:14px"><label for="{{ name }}">{{ q.t }} *</label><select id="{{ name }}" name="{{ name }}" required><option value="">— оценка менеджера —</option>{% for o in cat.KNOW_OPTS %}<option>{{ o }}</option>{% endfor %}</select></div>
+  {% elif q.ty == 'long' %}<div class="f" style="margin-bottom:14px"><label for="{{ name }}">{{ q.t }}{% if q.req %} *{% endif %}</label><textarea id="{{ name }}" name="{{ name }}" {{ 'required' if q.req }}></textarea></div>{% endif %}
+{% endfor %}
+  <button class="btn primary">Отправить</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Кандидаты в кадровый резерв</h2><p>Анкеты попадают сюда автоматически. После статуса «Согласован руководителем» создаётся черновик ИПР с данными из анкеты.</p></div></div>
+<div class="pick-row"><a class="pick {{ 'on' if not status }}" href="{{ url_for('ipr.candidates') }}">Все</a>{% for key, st in cat.CANDIDATE_STATUS.items() %}<a class="pick {{ 'on' if key == status }}" href="{{ url_for('ipr.candidates', status=key) }}">{{ st[1] }}</a>{% endfor %}</div>
+{% for c in rows %}
+<div class="card"><div class="goal-row" style="border:none;padding:0;margin:0"><div class="gh"><b>{{ c.fio }}</b> {{ m.chip(cat.CANDIDATE_STATUS[c.status]) }}<span class="hint ml-auto">{{ c.submitted_at.strftime('%d.%m.%Y %H:%M') }}</span></div></div>
+  <p>{{ c.position }} · {{ c.department }}{% if c.otd %} / {{ c.otd }}{% endif %} · руководитель {{ c.manager_name or '—' }}. Целевая должность: <b>{{ c.target }}</b>. Стаж: {{ c.experience or '—' }}. Инициатор: {{ c.initiator }}.</p>
+  {% if c.motive %}<p class="hint">{{ c.motive }}</p>{% endif %}
+  {% if c.status != 'mgr_ok' %}<form method="post" action="{{ url_for('ipr.candidate_update', cand_id=c.id) }}">{{ m.csrf() }}<div class="fields">
+    <div class="f"><label>Статус</label><select name="status">{% for key, st in cat.CANDIDATE_STATUS.items() %}<option value="{{ key }}" {{ 'selected' if key == c.status }}>{{ st[1] }}</option>{% endfor %}</select></div>
+    <div class="f"><label>Комментарий</label><input name="comment" value="{{ c.comment }}"></div></div><div class="actions"><button class="btn primary">Сохранить</button></div></form>{% endif %}
+</div>
+{% else %}<div class="card empty">Анкет нет</div>{% endfor %}
+{% endblock %}

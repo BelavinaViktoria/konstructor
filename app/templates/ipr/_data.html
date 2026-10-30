@@ -1,0 +1,20 @@
+<div class="fields">
+  <div class="f"><label>ФИО</label><input name="fio" value="{{ ipr.fio if ipr else '' }}" required></div>
+  <div class="f"><label>Текущая должность</label><input name="position" value="{{ ipr.position if ipr else '' }}"></div>
+  <div class="f"><label>Департамент</label><input name="department" value="{{ ipr.department if ipr else '' }}"></div>
+  <div class="f"><label>Управление</label><input name="upr" value="{{ ipr.upr if ipr else '' }}"></div>
+  <div class="f"><label>Отдел</label><input name="otd" value="{{ ipr.otd if ipr else '' }}"></div>
+  <div class="f"><label>Площадка</label><input name="site" value="{{ ipr.site if ipr else '' }}"></div>
+  <div class="f"><label>Почта</label><input type="email" name="email" value="{{ ipr.email if ipr else '' }}"></div>
+  <div class="f"><label>Телефон</label><input name="phone" value="{{ ipr.phone if ipr else '' }}"></div>
+  <div class="f"><label>Стаж</label><input name="experience" value="{{ ipr.experience if ipr else '' }}"></div>
+  <div class="f"><label>Целевая должность</label><input name="target" value="{{ ipr.target if ipr else '' }}"></div>
+  <div class="f"><label>Категория должности</label><select name="category">{% for key, label in cat.IPR_CATEGORIES.items() %}<option value="{{ key }}" {{ 'selected' if ipr and ipr.category == key }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="f"><label>Инициатор</label><input name="initiator" value="{{ ipr.initiator if ipr else '' }}"></div>
+  <div class="f"><label>Чью должность</label><input name="position_holder" value="{{ ipr.position_holder if ipr else '' }}"></div>
+  <div class="f"><label>Дата подачи в КР</label><input type="date" name="applied_date" value="{{ ipr.applied_date.isoformat() if ipr and ipr.applied_date else '' }}"></div>
+  <div class="f"><label>Дата первичной встречи</label><input type="date" name="start_date" value="{{ ipr.start_date.isoformat() if ipr and ipr.start_date else '' }}"></div>
+  <div class="f"><label>Руководитель</label><select name="manager_id"><option value="">— выберите —</option>{% for u in managers %}<option value="{{ u.id }}" {{ 'selected' if ipr and ipr.manager_id == u.id }}>{{ u.full_name }} | {{ u.email }}</option>{% endfor %}</select></div>
+  <div class="f"><label>Наставник</label><select name="mentor_id"><option value="">— выберите —</option>{% for u in mentors %}<option value="{{ u.id }}" {{ 'selected' if ipr and ipr.mentor_id == u.id }}>{{ u.full_name }} | {{ u.email }}</option>{% endfor %}</select></div>
+  <div class="f"><label>Учётная запись резервиста</label><select name="reservist_id"><option value="">— нет —</option>{% for u in reservists %}<option value="{{ u.id }}" {{ 'selected' if ipr and ipr.reservist_id == u.id }}>{{ u.full_name }}</option>{% endfor %}</select></div>
+</div>

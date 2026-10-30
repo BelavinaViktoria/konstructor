@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><h2>Создать ИПР</h2></div>
+{% set ipr = None %}
+<form class="card" method="post">{{ m.csrf() }}{% include "ipr/_data.html" %}<div class="actions"><button class="btn primary">Создать</button></div></form>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><h2>{{ 'Новая задача библиотеки' if is_new else 'Задача библиотеки' }}</h2><a class="btn" href="{{ url_for('admin.index') }}#library">Назад</a></div>
+<form class="card" method="post">{{ m.csrf() }}<div class="fields">
+  <div class="f"><label>Семейство</label><select name="family">{% for key, label in cat.FAMILIES.items() %}<option value="{{ key }}" {{ 'selected' if key == item.family }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="f"><label>Вид</label><select name="kind">{% for key, label in (('norm', 'Нормативный акт'), ('rep', 'Отчёт'), ('prof', 'Профессиональная задача')) %}<option value="{{ key }}" {{ 'selected' if key == item.kind }}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="f full"><label>Задача</label><input name="title" value="{{ item.title }}" required></div>
+  <div class="f full"><label>Описание</label><textarea name="description">{{ item.description or '' }}</textarea></div>
+  <div class="f"><label>Формат</label><input name="fmt" value="{{ item.fmt }}"></div>
+  <div class="f"><label>Срок</label><select name="term">{% for t in cat.TERMS %}<option {{ 'selected' if t == item.term }}>{{ t }}</option>{% endfor %}</select></div>
+  <div class="f"><label>Ответственный</label><input name="responsible" value="{{ item.responsible }}"></div>
+  <div class="f full"><label>Алгоритм: каждый шаг с новой строки (обязательно)</label><textarea name="algorithm" rows="7" required>{{ (item.algorithm or [])|join('\n') }}</textarea></div>
+</div><div class="actions"><button class="btn primary">Сохранить</button></div></form>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Рабочий стол</h2><p>Все планы ввода в должность: от черновика до итога испытательного срока.</p></div>
+<a class="btn primary" href="{{ url_for('pvd.plan_new') }}">Создать ПВД</a></div>
+<div class="stats">
+  <a class="stat" href="{{ url_for('pvd.desk', source='potok') }}"><b>{{ stats.potok }}</b><span>Из Потока</span></a>
+  {% for s in statuses %}<a class="stat" href="{{ url_for('pvd.desk', status=s) }}"><b>{{ stats[s] }}</b><span>{{ s }}</span></a>{% endfor %}
+  <a class="stat red" href="{{ url_for('pvd.desk', risk='yes') }}"><b>{{ rows|selectattr('risk.level', 'in', ['Средний', 'Высокий'])|list|length }}</b><span>В зоне риска (в выборке)</span></a>
+</div>
+<form class="card" method="get"><div class="fields">
+  <div class="f"><label>ФИО</label><input name="q" value="{{ request.args.get('q', '') }}"></div>
+  <div class="f"><label>Статус</label><select name="status">{{ m.options(statuses, request.args.get('status', '')) }}</select></div>
+  <div class="f"><label>Должность</label><select name="position">{{ m.options(positions, request.args.get('position', '')) }}</select></div>
+  <div class="f"><label>Департамент</label><select name="department">{{ m.options(departments, request.args.get('department', '')) }}</select></div>
+  <div class="f"><label>Площадка</label><select name="site">{{ m.options(sites, request.args.get('site', '')) }}</select></div>
+  <div class="f"><label>Руководитель</label><select name="manager_name">{{ m.options(managers, request.args.get('manager_name', '')) }}</select></div>
+  <div class="f"><label>Приём с</label><input type="date" name="hire_from" value="{{ request.args.get('hire_from', '') }}"></div>
+  <div class="f"><label>Приём по</label><input type="date" name="hire_to" value="{{ request.args.get('hire_to', '') }}"></div>
+</div><div class="actions"><button class="btn primary">Применить</button><a class="btn" href="{{ url_for('pvd.desk') }}">Сбросить</a></div></form>
+{% include "pvd/_plans_table.html" %}
+{% endblock %}

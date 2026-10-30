@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Создать ПВД</h2><p>Когда блок заполнен, руководителю автоматически уйдёт письмо о выходе нового сотрудника.</p></div></div>
+<form class="card" method="post">{{ m.csrf() }}{% include "pvd/_block1.html" %}<div class="actions"><button class="btn primary">Создать</button></div></form>
+{% endblock %}

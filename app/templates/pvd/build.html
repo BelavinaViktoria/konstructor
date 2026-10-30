@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Конструктор ПВД</h2><p>{{ plan.fio }} · <span class="chip {{ cat.PLAN_STATUS_CHIP[plan.status] }}">{{ plan.status }}</span></p></div>
+<div class="actions">
+  <a class="btn" href="{{ url_for('pvd.goals', plan_id=plan.id) }}">Экран целей</a>
+  <a class="btn" href="{{ url_for('pvd.plan_view', plan_id=plan.id) }}">Как видит новичок</a>
+  {{ m.post(url_for('pvd.request_goals', plan_id=plan.id), 'Запросить цели', 'btn') }}
+  {{ m.post(url_for('pvd.send_approval', plan_id=plan.id), 'Отправить на согласование', 'btn primary') }}
+</div></div>
+{% if plan.return_comment %}<div class="note warn">Руководитель вернул план: {{ plan.return_comment }}</div>{% endif %}
+{% if errors %}<div class="note info">Перед отправкой на согласование: <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>{% endif %}
+<details class="card" {{ 'open' if not plan.hire_date or not plan.manager }}><summary>Данные о сотруднике</summary>
+  <form method="post" action="{{ url_for('pvd.plan_block1', plan_id=plan.id) }}">{{ m.csrf() }}<br>{% include "pvd/_block1.html" %}<div class="actions"><button class="btn primary">Сохранить</button></div></form>
+  <p class="hint">Наставник: {{ plan.mentor_name or 'не назначен' }}. Назначает руководитель на экране целей.</p>
+</details>
+<div class="side-layout">
+  <div>
+    <div class="card"><h3>Общие блоки</h3>
+      {% for key, sub in cat.STD_BLOCKS.items() %}<div class="actions">{{ m.post(url_for('pvd.add_std', plan_id=plan.id, block=key), '+ ' ~ cat.GROUP_TITLES[key]) }}<span class="hint">{{ sub }}</span></div>{% endfor %}
+      <div class="actions">{{ m.post(url_for('pvd.add_std', plan_id=plan.id, block='all'), 'Добавить все три блока', 'btn sm primary') }}</div>
+    </div>
+    <div class="card"><h3>Задачи семейства{% if plan.family %}: {{ cat.FAMILIES.get(plan.family, plan.family) }}{% endif %}</h3>
+      {% for item in library %}<div class="log"><b>{{ item.title }}</b><span>{{ item.fmt }} · {{ item.term }}</span>
+        {% if item.title in used %}<span class="chip c-green">В плане</span>{% else %}{{ m.post(url_for('pvd.add_library', plan_id=plan.id, lib_id=item.id), 'Добавить') }}{% endif %}</div>
+      {% else %}<p class="hint">Укажите должность из справочника: здесь появятся задачи её семейства.</p>{% endfor %}
+    </div>
+    <div class="card"><h3>История</h3>{{ m.log(log) }}</div>
+  </div>
+  <div>
+    <div class="actions" style="margin:0 0 12px"><a class="btn" href="{{ url_for('pvd.task_new', plan_id=plan.id) }}">+ Дополнительная задача</a></div>
+    {% for group, title in cat.GROUP_TITLES.items() %}{% if groups.get(group) %}
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th colspan="5">{{ title }}</th></tr><tr><th>Задача</th><th>Формат</th><th>Срок</th><th>Ответственный</th><th></th></tr></thead><tbody>
+      {% for t in groups[group] %}<tr><td><b>{{ t.title }}</b>{% if t.source_note %}<br><span class="hint">{{ t.source_note }}</span>{% endif %}{% if not t.algorithm %}<br><span class="chip c-red">Алгоритм не заполнен</span>{% endif %}</td>
+      <td>{{ t.fmt }}</td><td>{{ t.due_date|d }}</td><td>{{ t.responsible }}</td>
+      <td><a class="btn sm" href="{{ url_for('pvd.task_edit', task_id=t.id) }}">Изменить</a> {{ m.post(url_for('pvd.task_delete', task_id=t.id), 'Удалить', 'btn sm danger', 'Удалить только эту задачу?') }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% endif %}{% else %}{% endfor %}
+    {% if not plan.tasks %}<div class="card empty">В плане пока нет задач: добавьте общие блоки и задачи семейства слева.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

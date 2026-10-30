@@ -1,0 +1,7 @@
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Сотрудник</th><th>Отдел</th><th>Руководитель</th><th>Наставник</th><th>Подбор</th><th>Приём</th><th>Уволен</th><th>Дней</th><th>ПВД</th><th>Проср.</th><th>Риск</th><th>Реакция</th><th>Исход</th></tr></thead><tbody>
+{% for r in rows %}<tr><td><b>{{ r.fio }}</b><br><span class="hint">{{ r.position }}</span></td><td>{{ r.otd }}</td><td>{{ r.manager }}</td><td>{{ r.mentor }}</td><td>{{ r.recruiter }}</td><td>{{ r.hire|d }}</td><td>{{ r.left|d }}</td><td>{{ r.days }}</td><td>{{ r.plan }}%</td><td>{{ r.over or '—' }}</td>
+<td><span class="chip {{ r.lvl_chip }}">{{ r.lvl }}{% if r.risk %} · {{ r.risk }}{% endif %}</span></td>
+<td>{% if r.react is none %}{% if r.risk >= 35 %}<span class="chip c-red">не было</span>{% else %}—{% endif %}{% else %}{{ r.react }} дн.{% endif %}</td>
+<td><span class="chip {{ 'c-red' if r.gone else 'c-green' if r.out == 'Прошёл ИС' else 'c-blue' }}">{{ r.out }}</span></td></tr>
+{% else %}<tr><td colspan="13" class="empty">По выбранным фильтрам ничего не найдено</td></tr>{% endfor %}
+</tbody></table></div>

@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Мой план развития</h2><p>Целевая должность: <b>{{ ipr.target }}</b>. Руководитель: {{ ipr.manager_name }}, наставник: {{ ipr.mentor_name or '—' }}.</p></div><span class="chip {{ cat.IPR_STATUS_CHIP[ipr.status] }}">{{ ipr.status }}</span></div>
+<div class="stats"><div class="stat violet"><b>{{ avg.practice if avg.practice is not none else '—' }}{{ '%' if avg.practice is not none }}</b><span>Практический блок</span></div><div class="stat"><b>{{ avg.courses if avg.courses is not none else '—' }}{{ '%' if avg.courses is not none }}</b><span>Онлайн-курсы</span></div></div>
+<div class="grid-2">
+  <div class="card"><h3>Навыки в развитии</h3>{% for s in skills %}<div class="log"><b>{{ s.title }}</b>{% if s.mastery %} {{ m.chip(cat.MASTERY[s.mastery]) }}{% endif %}</div>{% else %}<p class="hint">Пока не выбраны.</p>{% endfor %}</div>
+  <div class="card"><h3>Встречи</h3>{% for mt in ipr.meetings %}<div class="log"><b>{{ cat.IPR_MEET_TITLES[mt.kind] }}</b> {{ m.chip(cat.MEET_STATUS[mt.status]) }}<span>{{ mt.effective_date|d }}</span></div>{% endfor %}</div>
+</div>
+<div class="card"><h3>Практический блок</h3>
+{% for p in ipr.practices %}{% set st = cat.PRACTICE_STATUS[p.status] %}
+<div class="goal-row"><div class="gh"><b class="{{ 'struck' if p.status == 'na' }}">{{ p.title }}</b><span class="chip {{ st[0] }} ml-auto">{{ st[1] }}</span></div><p class="hint">Результат: {{ p.result or '—' }} · Срок: {{ p.due_date|d }}</p>
+  {% if p.na_reason %}<div class="note warn">Причина: {{ p.na_reason }}</div>{% endif %}
+  {% if p.status in ('plan', 'work') %}<form method="post" action="{{ url_for('ipr.practice_progress', practice_id=p.id) }}">{{ m.csrf() }}<div class="actions"><input class="input" style="width:90px" type="number" min="0" max="100" name="pct" value="{{ p.pct }}" aria-label="Процент"><button class="btn sm">Сохранить %</button><button class="btn sm primary" name="action" value="done">Выполнено</button></div></form>{% endif %}
+  {% for c in p.comments or [] %}<div class="log"><b>{{ c.who }}</b>: {{ c.text }}<span>{{ c.at }}</span></div>{% endfor %}
+  <details><summary>Комментарий</summary><form method="post" action="{{ url_for('ipr.practice_comment', practice_id=p.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Текст</label><input name="text" required></div></div><div class="actions"><button class="btn sm">Добавить</button></div></form></details>
+</div>{% else %}<p class="hint">Заданий нет.</p>{% endfor %}
+</div>
+<div class="grid-2">
+  <div class="card"><h3>Онлайн-обучение</h3>{% for c in ipr.courses %}<div class="log"><b>{% if c.url %}<a href="{{ c.url }}" rel="noopener noreferrer">{{ c.title }}</a>{% else %}{{ c.title }}{% endif %}</b><div class="progress"><i style="width:{{ c.pct }}%"></i></div><span>{{ c.pct }}%</span></div>{% else %}<p class="hint">Нет</p>{% endfor %}</div>
+  <div class="card"><h3>Литература</h3>{% for b in ipr.books %}<div class="log"><b>{{ b.title }}</b><span>{{ b.author }}</span></div>{% else %}<p class="hint">Нет</p>{% endfor %}</div>
+  {% if show_tq %}<div class="card"><h3>Результаты Talent Q</h3><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Навык</th><th>Факт</th><th>Цель</th></tr></thead><tbody>{% for r in ipr.tq_rows %}<tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td></tr>{% endfor %}</tbody></table></div></div>{% endif %}
+</div>
+{% endblock %}

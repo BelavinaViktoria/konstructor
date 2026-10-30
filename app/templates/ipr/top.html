@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Состав резерва</h2><p>Резервисты с утверждённым планом и их прогресс.</p></div></div>
+<form class="actions" method="get" style="margin-bottom:14px"><select class="input" style="max-width:340px" name="target" aria-label="Целевая должность">{{ m.options(targets, target, 'Все целевые должности') }}</select><button class="btn">Показать</button></form>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Резервист</th><th>Текущая должность</th><th>Целевая должность</th><th>Статус</th><th>Практика</th><th>Курсы</th><th></th></tr></thead><tbody>
+{% for r in rows %}{% set i = r.ipr %}<tr><td><b>{{ i.fio }}</b></td><td>{{ i.position }}</td><td>{{ i.target }}</td><td><span class="chip {{ cat.IPR_STATUS_CHIP[i.status] }}">{{ i.status }}</span></td>
+<td>{{ r.avg.practice if r.avg.practice is not none else '—' }}{{ '%' if r.avg.practice is not none }}</td><td>{{ r.avg.courses if r.avg.courses is not none else '—' }}{{ '%' if r.avg.courses is not none }}</td>
+<td><a class="btn sm" href="{{ url_for('ipr.card', ipr_id=i.id) }}">Карточка</a></td></tr>
+{% else %}<tr><td colspan="7" class="empty">Резервистов нет</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

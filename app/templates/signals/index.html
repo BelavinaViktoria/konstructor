@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Сигналы о проблемах</h2><p>Один проблемный ответ, один сигнал. План действий пишет руководитель или наставник; если сигнал взял наставник, руководитель получает уведомление с его планом.</p></div></div>
+<form class="actions" method="get" style="margin-bottom:14px"><input class="input" style="max-width:320px" name="q" value="{{ q }}" placeholder="Поиск по ФИО" aria-label="Поиск по ФИО">{% if plan_id %}<input type="hidden" name="plan" value="{{ plan_id }}">{% endif %}<input type="hidden" name="tab" value="{{ tab }}"><button class="btn">Найти</button>{% if q or plan_id %}<a class="btn" href="{{ url_for('signals.index') }}">Сбросить</a>{% endif %}</form>
+<div class="pick-row">{% for key, label, n in tabs %}<a class="pick {{ 'on' if key == tab }}" href="{{ url_for('signals.index', tab=key, q=q or None, plan=plan_id) }}">{{ label }} · {{ n }}</a>{% endfor %}</div>
+{% for s in rows %}{% set st = cat.SIGNAL_STATUS[s.status] %}
+<details class="card" {{ 'open' if rows|length == 1 }}>
+  <summary>{{ s.plan.fio }}: {{ s.title }}
+    <span class="chip {{ st[0] }}">{{ st[1] }}</span> <span class="chip {{ 'c-red' if s.level != 'средний' else 'c-amber' }}">{{ s.level }}</span>
+    <span class="chip">{{ cat.SIGNAL_SOURCES[s.source] }}</span>
+    {% if s.status in ('new', 'returned') and s.deadline and s.deadline < now %}<span class="chip c-red">Просрочена реакция</span>{% endif %}</summary>
+  <p style="margin-top:10px">{{ s.detail }}</p>
+  {% for e in s.evidence %}<div class="log"><span>{{ e[0] }}</span><b>{{ e[1] }}</b></div>{% endfor %}
+  <p class="hint" style="margin-top:8px">Создан {{ s.created_at.strftime('%d.%m.%Y %H:%M') }}. План действий нужен до {{ s.deadline|d }}.</p>
+  {% if s.recommendation %}<div class="note info" style="margin-top:8px"><b>Что предлагает ИИ:</b> {{ s.recommendation }}</div>{% endif %}
+  {% if s.return_comment %}<div class="note warn">Возвращён: {{ s.return_comment }}</div>{% endif %}
+  {% if s.action_plan %}<p><b>План ({{ s.owner.short_name if s.owner }}, {{ s.owner_role }}):</b> {{ s.action_plan }}. Срок: {{ s.action_due|d }}.</p>{% endif %}
+  {% if s.result %}<p><b>Результат:</b> {{ s.result }}</p>{% endif %}
+  {% if s.closed_at %}<p class="hint">Закрыл {{ s.closed_by.short_name if s.closed_by }}, {{ s.closed_at.strftime('%d.%m.%Y') }}</p>{% endif %}
+
+  {% if can_take(s) %}
+  <form method="post" action="{{ url_for('signals.take', signal_id=s.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>План мероприятий</label><textarea name="action_plan" required></textarea></div><div class="f"><label>Срок</label><input type="date" name="action_due" required></div></div><div class="actions"><button class="btn primary">Взять в работу</button></div></form>
+  {% endif %}
+  {% if s.status == 'work' and s.owner_id == current_user.id %}
+  <form method="post" action="{{ url_for('signals.done', signal_id=s.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Результат</label><textarea name="result" required></textarea></div></div><div class="actions"><button class="btn primary">Выполнено</button></div></form>
+  {% endif %}
+  {% if s.status == 'done' and current_user.role in ('recruiter', 'learning') %}
+  <div class="actions">{{ m.post(url_for('signals.close', signal_id=s.id), 'Закрыть сигнал', 'btn primary') }}</div>
+  <form method="post" action="{{ url_for('signals.return_signal', signal_id=s.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Что доработать</label><input name="comment" required></div></div><div class="actions"><button class="btn">Вернуть в работу</button></div></form>
+  {% endif %}
+</details>
+{% else %}<div class="card empty">Сигналов нет</div>{% endfor %}
+{% endblock %}

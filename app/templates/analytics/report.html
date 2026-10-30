@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Отчёт по адаптации{% endblock %}
+{% block content %}
+<h2>Отчёт по адаптации · {{ company }}</h2>
+<p class="hint">Сотрудников в выборке: {{ stats.total }}, покинули компанию: {{ stats.gone }}, удержание: {{ stats.retention }}%.</p><br>
+<div class="card"><h3>Анализ: проблемные зоны</h3>{% include "analytics/_findings.html" %}</div>
+<h3 style="margin-bottom:10px">Данные выборки</h3>
+{% include "analytics/_rows.html" %}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head"><div><h2>Обзор</h2><p>{{ company }}: адаптация новых сотрудников и развитие кадрового резерва.</p></div></div>
+<div class="stats">
+  {% for status, n in counts.items() %}<a class="stat" href="{{ url_for('pvd.desk', status=status) }}"><b>{{ n }}</b><span>{{ status }}</span></a>{% endfor %}
+  <a class="stat red" href="{{ url_for('signals.index') }}"><b>{{ open_signals }}</b><span>Сигналы ждут плана</span></a>
+</div>
+<div class="grid-2">
+  <div class="card"><h3>Модуль ПВД</h3><p>Менеджер по подбору собирает план из блоков, руководитель ставит цели и назначает наставника, новичок отчитывается по задачам, ответы в опросах превращаются в сигналы.</p></div>
+  <div class="card"><h3>Модуль ИПР</h3><p>Анкета кандидата становится черновиком плана, менеджер по обучению подбирает навыки, курсы и задания, руководитель утверждает, резервист ведёт план.</p></div>
+</div>
+{% endblock %}

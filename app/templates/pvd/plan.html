@@ -1,0 +1,65 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>План ввода в должность</h2><p><b>{{ plan.fio }}</b>, {{ plan.position }}. Приём {{ plan.hire_date|d }}, конец ИС {{ plan.probation_end|d }}. Руководитель: {{ plan.manager_name or '—' }}, наставник: {{ plan.mentor_name or '—' }}.</p></div>
+<div class="actions"><span class="chip {{ cat.PLAN_STATUS_CHIP[plan.status] }}">{{ plan.status }}</span>{% if not is_employee %}{{ m.risk_chip(risk) }}{% endif %}
+{% if is_staff %}<a class="btn" href="{{ url_for('pvd.m1', plan_id=plan.id) }}">Встреча через месяц</a><a class="btn" href="{{ url_for('pvd.final', plan_id=plan.id) }}">Итоги ИС</a>{% endif %}
+{% if is_manager %}<a class="btn" href="{{ url_for('pvd.goals', plan_id=plan.id) }}">Цели</a>{% endif %}</div></div>
+
+{% if is_manager and plan.status == 'На согласовании' %}
+<div class="card"><h3>Согласование плана</h3>
+  {{ m.post(url_for('pvd.approve', plan_id=plan.id), 'Согласовать и отправить новичку', 'btn primary') }}
+  <form method="post" action="{{ url_for('pvd.return_plan', plan_id=plan.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Что поправить</label><textarea name="comment"></textarea></div></div><div class="actions"><button class="btn">Вернуть на доработку</button></div></form>
+</div>{% endif %}
+
+{% if is_employee %}
+<div class="card">
+  {% if not plan.acknowledged_at %}<p>Ознакомьтесь с планом. Если есть вопросы, задайте их руководителю и наставнику.</p><div class="actions">{{ m.post(url_for('pvd.ack', plan_id=plan.id), 'Ознакомлен и согласен', 'btn primary') }}</div>
+  <form method="post" action="{{ url_for('pvd.questions', plan_id=plan.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Вопросы по плану</label><textarea name="text">{{ plan.newbie_questions or '' }}</textarea></div></div><div class="actions"><button class="btn">Отправить вопросы</button></div></form>
+  {% else %}<span class="chip c-green">Ознакомлен {{ plan.acknowledged_at.strftime('%d.%m.%Y') }}</span>{% endif %}
+  <div class="actions">
+    {% if 'day1' not in answered %}<a class="btn sm primary" href="{{ url_for('pvd.survey', plan_id=plan.id, key='day1') }}">Пройти опрос 1 дня</a>{% endif %}
+    {% if 'week1' not in answered %}<a class="btn sm primary" href="{{ url_for('pvd.survey', plan_id=plan.id, key='week1') }}">Пройти опрос 1 недели</a>{% endif %}
+  </div>
+</div>{% endif %}
+
+<div class="stats">
+  <div class="stat green"><b>{{ counts.done }}</b><span>Подтверждено</span></div><div class="stat amber"><b>{{ counts.wait }}</b><span>На проверке</span></div>
+  <div class="stat amber"><b>{{ counts.blocked }}</b><span>Ждут помощи</span></div><div class="stat red"><b>{{ counts.over }}</b><span>Просрочено</span></div>
+  <div class="stat"><b>{{ counts.soon }}</b><span>Скоро дедлайн</span></div><div class="stat"><b>{{ counts.plan }}</b><span>Не начаты</span></div>
+  <div class="stat violet"><b>{{ progress }}%</b><span>Прогресс: только подтверждённые</span></div>
+</div>
+
+<div class="card"><h3>Цели</h3>
+  {% for goal in plan.goals %}{% set st = cat.GOAL_STATUS[goal.status] %}
+  <div class="goal-row"><div class="gh"><span class="gn">{{ loop.index }}</span><b>{{ goal.title }}</b><span class="chip {{ st[0] }} ml-auto">{{ st[1] }}</span></div>
+    <p>{{ goal.description }}</p><p class="hint">Результат: {{ goal.result }} · Срок: {{ goal.due_date|d }}</p>
+    {% if goal.report_comment %}<p class="hint">Отчёт: {{ goal.report_comment }}{% if goal.report_link %} · <a href="{{ goal.report_link }}" rel="noopener noreferrer">ссылка</a>{% endif %}</p>{% endif %}
+    {% if goal.review_comment %}<p class="hint">Руководитель: {{ goal.review_comment }}</p>{% endif %}
+    {% if is_employee and goal.status in ('plan', 'blocked') %}<details><summary>Отчитаться</summary><form method="post" action="{{ url_for('pvd.goal_report', goal_id=goal.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="f full"><label>Ссылка</label><input name="link"></div></div><div class="actions"><button class="btn primary" name="action" value="done">Выполнено</button><button class="btn" name="action" value="help">Нужна помощь</button></div></form></details>{% endif %}
+    {% if is_manager and goal.status == 'wait' %}<form method="post" action="{{ url_for('pvd.goal_review', goal_id=goal.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Комментарий</label><input name="comment"></div></div><div class="actions"><button class="btn primary" name="decision" value="done">Выполнено</button><button class="btn" name="decision" value="partial">Частично</button><button class="btn" name="decision" value="fail">Не выполнено</button><button class="btn" name="decision" value="plan">Вернуть</button></div></form>{% endif %}
+  </div>{% else %}<p class="hint">Целей пока нет.</p>{% endfor %}
+</div>
+
+{% for group, title in cat.GROUP_TITLES.items() %}{% if groups.get(group) %}
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th colspan="5">{{ title }}</th></tr><tr><th>Задача</th><th>Формат</th><th>Срок</th><th>Статус</th><th>Действия</th></tr></thead><tbody>
+{% for t in groups[group] %}{% set vs = statuses[t.id] %}{% set st = cat.TASK_STATUS[vs] %}
+<tr class="{{ {'over': 'r-red', 'soon': 'r-orange', 'done': 'r-green', 'wait': 'r-amber', 'blocked': 'r-orange'}.get(vs, '') }}">
+<td><b>{{ t.title }}</b>{% if t.description %}<br><span class="hint">{{ t.description }}</span>{% endif %}
+  <details><summary>Алгоритм · шагов: {{ t.algorithm|length }}</summary><ol class="alg">{% for s in t.algorithm %}<li>{{ s }}</li>{% endfor %}</ol></details>
+  {% if t.report_comment %}<p class="hint">Отчёт: {{ t.report_comment }}{% if t.report_link %} · <a href="{{ t.report_link }}" rel="noopener noreferrer">ссылка</a>{% endif %}</p>{% endif %}
+  {% if t.review_comment %}<p class="hint">Руководитель: {{ t.review_comment }}</p>{% endif %}</td>
+<td>{{ t.fmt }}</td><td>{{ t.due_date|d }}</td><td><span class="chip {{ st[0] }}">{{ st[1] }}</span></td>
+<td>
+  {% if t.group in ('pulse', 'meet') %}<span class="hint">{{ 'Статус ставит система' if t.group == 'pulse' else 'Отмечает менеджер по подбору' }}</span>
+  {% elif is_employee and t.status in ('plan', 'blocked') %}<details><summary>Отчитаться</summary><form method="post" action="{{ url_for('pvd.task_report', task_id=t.id) }}">{{ m.csrf() }}<div class="f"><label>Комментарий</label><textarea name="comment"></textarea></div><div class="f"><label>Ссылка</label><input name="link"></div><div class="actions"><button class="btn sm primary" name="action" value="done">Выполнено</button><button class="btn sm" name="action" value="help">Нужна помощь</button></div></form></details>
+  {% elif is_manager and t.status == 'wait' %}<form method="post" action="{{ url_for('pvd.task_review', task_id=t.id) }}">{{ m.csrf() }}<div class="f"><label>Комментарий</label><input name="comment"></div><div class="actions"><button class="btn sm primary" name="decision" value="ok">Подтвердить</button><button class="btn sm" name="decision" value="return">Вернуть</button></div></form>{% endif %}
+</td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}{% endfor %}
+
+{% if not is_employee %}
+<div class="grid-2">
+  <div class="card"><h3>Риск удержания</h3>{% for f in risk.factors %}<div class="log"><b>{{ f[1] }}</b><span>{{ f[2] }}</span></div>{% else %}<p class="hint">Тревожных сигналов нет.</p>{% endfor %}</div>
+  <div class="card"><h3>История</h3>{{ m.log(log) }}</div>
+</div>{% endif %}
+{% endblock %}

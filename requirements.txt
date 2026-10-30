@@ -1,0 +1,9 @@
+Flask>=3.0,<4
+Flask-SQLAlchemy>=3.1,<4
+Flask-WTF>=1.2,<2
+SQLAlchemy>=2.0,<3
+openpyxl>=3.1,<4
+python-dotenv>=1.0,<2
+waitress>=3.0,<4
+# Необязательно: только если задан ANTHROPIC_API_KEY. Без ключа работает встроенный разбор по правилам.
+anthropic>=0.60

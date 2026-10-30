@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card"><h3>{{ code }}</h3><p>{{ text }}</p><div class="actions"><a class="btn" href="{{ url_for('auth.index') }}">На главную</a></div></div>
+{% endblock %}

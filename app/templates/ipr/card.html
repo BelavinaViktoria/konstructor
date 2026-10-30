@@ -1,0 +1,56 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Карточка ИПР</h2><p><b>{{ ipr.fio }}</b>, {{ ipr.position }} → {{ ipr.target }}. Телефон: {{ ipr.phone or '—' }}. Руководитель: {{ ipr.manager_name or '—' }}, наставник: {{ ipr.mentor_name or '—' }}.</p></div>
+<div class="actions"><span class="chip {{ cat.IPR_STATUS_CHIP[ipr.status] }}">{{ ipr.status }}</span>{% if can_edit %}<a class="btn" href="{{ url_for('ipr.build', ipr_id=ipr.id) }}">Конструктор</a>{% endif %}</div></div>
+
+{% if is_manager and ipr.status == 'На согласовании у руководителя' %}
+<div class="card"><h3>Согласование ИПР</h3><form method="post" action="{{ url_for('ipr.decision', ipr_id=ipr.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Комментарий (обязателен при возврате)</label><textarea name="comment"></textarea></div></div><div class="actions"><button class="btn primary" name="decision" value="ok">Утвердить</button><button class="btn" name="decision" value="return">Вернуть на доработку</button></div></form></div>
+{% endif %}
+
+<div class="stats">
+  <div class="stat violet"><b>{{ avg.practice if avg.practice is not none else '—' }}{{ '%' if avg.practice is not none }}</b><span>Средняя: практический блок</span></div>
+  <div class="stat"><b>{{ avg.courses if avg.courses is not none else '—' }}{{ '%' if avg.courses is not none }}</b><span>Средняя: курсы iSpring</span></div>
+  <div class="stat green"><b>{{ skills|length }}</b><span>Навыков в развитии</span></div>
+</div>
+
+<div class="card"><h3>Навыки в развитии</h3>
+  {% for s in skills %}<div class="log"><b>{{ s.title }}</b> <span class="chip">{{ 'Профессиональный' if s.kind == 'hard' else 'Личный' }}</span>{% if s.mastery %} {{ m.chip(cat.MASTERY[s.mastery]) }}{% endif %}
+    {% if can_edit or is_manager %}<form method="post" action="{{ url_for('ipr.skill_mastery', skill_id=s.id) }}">{{ m.csrf() }}<div class="fields"><div class="f"><label>Освоение</label><select name="mastery"><option value="">—</option>{% for key, st in cat.MASTERY.items() %}<option value="{{ key }}" {{ 'selected' if key == s.mastery }}>{{ st[1] }}</option>{% endfor %}</select></div><div class="f"><label>Комментарий</label><input name="note" value="{{ s.mastery_note }}"></div></div><div class="actions"><button class="btn sm">Сохранить</button></div></form>{% endif %}
+  </div>{% else %}<p class="hint">Навыки ещё не выбраны.</p>{% endfor %}
+</div>
+
+<div class="card"><h3>Практический блок</h3>
+{% for p in ipr.practices %}{% set st = cat.PRACTICE_STATUS[p.status] %}
+  <div class="goal-row"><div class="gh"><b class="{{ 'struck' if p.status == 'na' }}">{{ p.title }}</b>{% if p.is_ai %}<span class="chip c-violet">ИИ-проект</span>{% endif %}<span class="chip {{ st[0] }} ml-auto">{{ st[1] }}</span></div>
+    <p class="hint">Результат: {{ p.result or '—' }} · Срок: {{ p.due_date|d }} · Выполнено: {{ p.pct }}%</p>
+    {% if p.na_reason %}<div class="note warn">Причина: {{ p.na_reason }}</div>{% endif %}
+    {% for c in p.comments or [] %}<div class="log"><b>{{ c.who }}</b>: {{ c.text }}<span>{{ c.at }}</span></div>{% endfor %}
+    {% if p.status != 'na' %}<div class="actions">
+      {% if can_edit or is_manager or is_mentor %}
+      <form class="inline" method="post" action="{{ url_for('ipr.practice_due', practice_id=p.id) }}">{{ m.csrf() }}<input class="input" style="width:auto" type="date" name="due_date" value="{{ p.due_date.isoformat() if p.due_date else '' }}" aria-label="Новый срок"> <button class="btn sm">Изменить срок</button></form>
+      <form class="inline" method="post" action="{{ url_for('ipr.practice_progress', practice_id=p.id) }}">{{ m.csrf() }}<input class="input" style="width:80px" type="number" min="0" max="100" name="pct" value="{{ p.pct }}" aria-label="Процент"> <button class="btn sm">Сохранить %</button></form>
+      {% endif %}
+      {% if is_manager and p.status != 'conf' %}{{ m.post(url_for('ipr.practice_confirm', practice_id=p.id), 'Подтвердить', 'btn sm primary') }}{% endif %}
+    </div>
+    {% if can_edit or is_manager or is_mentor %}<details><summary>Неактуально: зачеркнуть с причиной</summary><form method="post" action="{{ url_for('ipr.practice_strike', practice_id=p.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Причина</label><input name="reason" required></div></div><div class="actions"><button class="btn sm danger">Зачеркнуть</button></div></form></details>{% endif %}{% endif %}
+    <details><summary>Комментарий</summary><form method="post" action="{{ url_for('ipr.practice_comment', practice_id=p.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Текст</label><input name="text" required></div></div><div class="actions"><button class="btn sm">Добавить</button></div></form></details>
+  </div>
+{% else %}<p class="hint">Заданий нет.</p>{% endfor %}
+{% if can_edit or is_manager or is_mentor %}<details><summary>Добавить задание, в том числе взамен неактуального</summary><form method="post" action="{{ url_for('ipr.practice_add', ipr_id=ipr.id) }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Задание</label><textarea name="title" required></textarea></div><div class="f"><label>Результат</label><input name="result"></div><div class="f"><label>Срок</label><input type="date" name="due_date" required></div><div class="f"><label>Взамен</label><select name="replaces_id"><option value="">—</option>{% for p in ipr.practices if p.status == 'na' %}<option value="{{ p.id }}">{{ p.title[:70] }}</option>{% endfor %}</select></div></div><div class="actions"><button class="btn primary">Добавить</button></div></form></details>{% endif %}
+</div>
+
+<div class="grid-2">
+  <div class="card"><h3>Онлайн-обучение iSpring</h3>
+    {% for c in ipr.courses %}<div class="log"><b>{{ c.title }}</b>{% if c.assigned %} <span class="chip c-green">Обучение назначено</span>{% endif %}<div class="progress"><i style="width:{{ c.pct }}%"></i></div><span>{{ c.pct }}%</span>
+      {% if can_edit %}<form method="post" action="{{ url_for('ipr.course_update', course_id=c.id) }}">{{ m.csrf() }}<input class="input" style="width:80px" type="number" min="0" max="100" name="pct" value="{{ c.pct }}" aria-label="Процент"> <label><input type="checkbox" name="assigned" value="1" {{ 'checked' if c.assigned }}> Назначено</label> <button class="btn sm">Сохранить</button></form>{% endif %}</div>
+    {% else %}<p class="hint">Курсов нет.</p>{% endfor %}
+  </div>
+  <div class="card"><h3>Встречи</h3>
+    {% for mt in ipr.meetings %}<div class="log"><b>{{ cat.IPR_MEET_TITLES[mt.kind] }}</b> {{ m.chip(cat.MEET_STATUS[mt.status]) }}<span>План: {{ mt.planned_date|d }}{% if mt.moved_date %}, перенесена на {{ mt.moved_date|d }}{% endif %}{% if mt.note %} · {{ mt.note }}{% endif %}</span>
+      {% if can_edit %}<form method="post" action="{{ url_for('ipr.meeting_update', meeting_id=mt.id) }}">{{ m.csrf() }}<div class="fields"><div class="f"><label>Перенести на</label><input type="date" name="moved_date"></div><div class="f"><label>Статус</label><select name="status">{% for key, st in cat.MEET_STATUS.items() %}<option value="{{ key }}" {{ 'selected' if key == mt.status }}>{{ st[1] }}</option>{% endfor %}</select></div><div class="f"><label>Заметка</label><input name="note" value="{{ mt.note }}"></div></div><div class="actions"><button class="btn sm">Сохранить</button></div></form>{% endif %}</div>
+    {% else %}<p class="hint">Дата первичной встречи не указана.</p>{% endfor %}
+  </div>
+  <div class="card"><h3>Литература</h3>{% for b in ipr.books %}<div class="log"><b>{{ b.title }}</b><span>{{ b.author }}</span></div>{% else %}<p class="hint">Нет</p>{% endfor %}</div>
+  <div class="card"><h3>История</h3>{{ m.log(log) }}</div>
+</div>
+{% endblock %}

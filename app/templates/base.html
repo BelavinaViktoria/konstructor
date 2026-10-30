@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Конструктор ПВД и ИПР{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-in">
+  <a class="brand" href="{{ url_for('auth.index') }}"><span class="brand-mark">ПВД</span><span>Конструктор ПВД и ИПР</span></a>
+  {% if current_user %}
+  <nav class="nav">
+    {% for label, endpoint, module in nav %}
+    <a href="{{ url_for(endpoint) }}" class="{{ 'm-' ~ module if module }} {{ 'on' if request.endpoint == endpoint }}">{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <div class="who">
+    <a class="bell" href="{{ url_for('auth.notifications') }}" title="Уведомления">Уведомления{% if unread %} <b>{{ unread }}</b>{% endif %}</a>
+    <div>{{ current_user.short_name }}<small>{{ current_user.role_label }}</small></div>
+    <form class="inline" method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="link-btn">Выйти</button></form>
+  </div>
+  {% endif %}
+</div></header>
+<div class="toasts">
+  {% for category, message in get_flashed_messages(with_categories=true) %}<div class="toast {{ category }}">{{ message }}</div>{% endfor %}
+</div>
+<main>{% block content %}{% endblock %}</main>
+</body>
+</html>

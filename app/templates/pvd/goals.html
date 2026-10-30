@@ -1,0 +1,95 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Постановка целей: экран руководителя</h2><p><b>{{ plan.fio }}</b>, {{ plan.position }}. Выход {{ plan.hire_date|d }}, конец испытательного срока {{ plan.probation_end|d }}.</p></div>
+<div class="actions"><span class="chip {{ cat.PLAN_STATUS_CHIP[plan.status] }}">{{ plan.status }}</span>{% if plan.goals_written_at %}<span class="chip c-green">Цели записаны</span>{% endif %}</div></div>
+{% if not editable %}<div class="note info">Цели ставит руководитель. Здесь они показаны только для просмотра.</div>{% endif %}
+
+{% if editable %}
+<div class="grid-2">
+  <div class="card"><h3>Должностная инструкция</h3>
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('pvd.jd_parse', plan_id=plan.id) }}">{{ m.csrf() }}
+      <div class="fields"><div class="f full"><label>Файл .docx или .txt</label><input type="file" name="file" accept=".docx,.txt"></div>
+      <div class="f full"><label>или текст инструкции</label><textarea name="text"></textarea></div></div>
+      <div class="actions"><button class="btn ai">Предложить цели и задачи</button></div>
+    </form>
+  </div>
+  <div class="card"><h3>Карта KPI</h3>
+    {% if not draft %}
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('pvd.kpi_upload', plan_id=plan.id) }}">{{ m.csrf() }}
+      <div class="fields"><div class="f full"><label>Файл Excel (.xlsx)</label><input type="file" name="file" accept=".xlsx" required></div></div>
+      <div class="actions"><button class="btn ai">Загрузить карту</button></div>
+    </form>
+    {% if is_demo %}<div class="actions">{{ m.post(url_for('pvd.kpi_demo', plan_id=plan.id), 'Взять пример карты') }}</div>{% endif %}
+    <p class="hint">Суммы премий, ставки и табельный номер в план не переносятся.</p>
+    {% else %}<p>Файл: <b>{{ draft.file }}</b>. Сотрудник в карте: {{ draft.fio or '—' }}. {{ draft.period }}</p>
+    {% if mismatch %}<div class="note warn">В карте указан другой сотрудник: {{ draft.fio }}. Проверьте файл.</div>{% endif %}{{ m.post(url_for('pvd.kpi_reset', plan_id=plan.id), 'Загрузить другую карту') }}{% endif %}
+  </div>
+</div>
+
+{% if draft %}
+<form class="card" method="post" action="{{ url_for('pvd.kpi_add', plan_id=plan.id) }}">{{ m.csrf() }}
+  <h3>Пункты карты KPI</h3>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>В цели</th><th>Пункт карты</th><th>Критерий</th><th>Срок освоения</th></tr></thead><tbody>
+  {% for x in draft['items'] %}<tr><td><input type="checkbox" name="item" value="{{ loop.index0 }}" checked aria-label="Добавить в цели"></td><td><b>{{ x.title }}</b><br><span class="hint">ИИ · {{ x.source }}</span></td><td>{{ x.criterion }}</td>
+    <td><input class="input" type="date" name="due_{{ loop.index0 }}" value="{{ x.due }}" aria-label="Срок"><span class="hint">{{ x.fmt }}</span></td></tr>{% endfor %}
+  </tbody></table></div>
+  <button class="btn primary">Добавить отмеченные в цели</button>
+</form>
+{% endif %}
+
+{% if jd_result %}
+<form class="card" method="post" action="{{ url_for('pvd.jd_apply', plan_id=plan.id) }}">{{ m.csrf() }}
+  <h3>Предложения по должностной инструкции</h3>
+  {% if jd_result.engine == 'rules' %}<div class="note info">Черновики собраны по правилам из строк обязанностей: уточните формулировки.</div>{% endif %}
+  <h4>Цели</h4>{% for x in jd_result.goals %}<label class="log" style="display:block"><input type="checkbox" name="goal" value="{{ x|tojson|forceescape }}" checked> <b>{{ x.title }}</b><span>{{ x.result }}</span></label>{% else %}<p class="hint">Нет</p>{% endfor %}
+  <h4>Задачи</h4>{% for x in jd_result.tasks %}<label class="log" style="display:block"><input type="checkbox" name="task" value="{{ x|tojson|forceescape }}" checked> <b>{{ x.title }}</b><span>{{ x.description }}</span></label>{% else %}<p class="hint">Нет</p>{% endfor %}
+  <div class="actions"><button class="btn primary">Добавить выбранное в план</button></div>
+</form>
+{% endif %}
+{% endif %}
+
+<form method="post" action="{{ url_for('pvd.goals_save', plan_id=plan.id) }}">{{ m.csrf() }}
+<div class="card"><h3>Наставник новичка</h3>
+  <div class="fields">
+    <div class="f"><label for="mentor_id">ФИО наставника</label><select id="mentor_id" name="mentor_id" {{ 'disabled' if not editable }}><option value="">— выберите —</option>{% for u in mentors %}<option value="{{ u.id }}" data-email="{{ u.email }}" {{ 'selected' if plan.mentor_id == u.id }}>{{ u.full_name }}</option>{% endfor %}</select></div>
+    <div class="f"><label for="mentor_email">Почта наставника</label><input id="mentor_email" type="email" name="mentor_email" value="{{ plan.mentor_email or '' }}" {{ 'disabled' if not editable }}></div>
+  </div>
+  <p class="hint">Наставник записывается вместе с целями: его данные автоматически попадают в блок 1 плана.</p>
+</div>
+<div class="card"><h3>Цели на испытательный срок · Целей: {{ plan.goals|length }} (от {{ cat.GOAL_MIN }} до {{ cat.GOAL_MAX }})</h3>
+  {% for goal in plan.goals %}
+  <div class="goal-row"><div class="gh"><span class="gn">{{ loop.index }}</span><b>Цель {{ loop.index }}</b>
+    {% if goal.origin == 'kpi' %}<span class="chip c-teal ml-auto">Из карты KPI</span>{% elif goal.origin == 'jd' %}<span class="chip c-violet ml-auto">Из ДИ</span>{% else %}<span class="chip c-blue ml-auto">SMART</span>{% endif %}</div>
+    <div class="fields">
+      <div class="f full"><label>Цель</label><input name="title_{{ goal.id }}" value="{{ goal.title }}" {{ 'disabled' if not editable }}></div>
+      <div class="f full"><label>Описание</label><input name="description_{{ goal.id }}" value="{{ goal.description }}" {{ 'disabled' if not editable }}></div>
+      <div class="f"><label>Планируемый результат</label><input name="result_{{ goal.id }}" value="{{ goal.result }}" {{ 'disabled' if not editable }}></div>
+      <div class="f"><label>Срок выполнения</label><input type="date" name="due_{{ goal.id }}" value="{{ goal.due_date.isoformat() if goal.due_date else '' }}" {{ 'disabled' if not editable }}></div>
+    </div>
+    {% if goal.source_note %}<p class="hint">{{ goal.source_note }}</p>{% endif %}
+    {% if editable %}<div class="actions">
+      {% if plan.goals|length > cat.GOAL_MIN %}<button class="btn sm danger" formaction="{{ url_for('pvd.goal_delete', goal_id=goal.id) }}" data-goal-action>Удалить цель</button>{% endif %}
+      {% if goal.origin == 'kpi' %}<button class="btn sm" formaction="{{ url_for('pvd.goal_to_task', goal_id=goal.id) }}">Перенести в блок задач</button>{% endif %}
+    </div>{% endif %}
+  </div>
+  {% else %}<p class="hint">Целей пока нет.</p>{% endfor %}
+  {% if editable %}<div class="actions">
+    <button class="btn" name="action" value="add">+ Добавить цель</button>
+    <button class="btn" name="action" value="draft">Сохранить черновик</button>
+    <button class="btn primary" name="action" value="write">Записать</button>
+  </div>{% endif %}
+</div>
+</form>
+
+<div class="card" id="constructor"><h3>Конструктор задач</h3>
+  <p class="hint">Задачи из должностной инструкции и цели из карты KPI, перенесённые в задачи. Все они уже в плане.</p><br>
+  {% for t in constructor %}
+  <div class="goal-row"><div class="gh"><span class="gn">{{ loop.index }}</span><b>{{ t.title }}</b>
+    {% if t.source == 'kpi' %}<span class="chip c-teal ml-auto">Из карты KPI</span>{% else %}<span class="chip c-violet ml-auto">Из ДИ</span>{% endif %}</div>
+    <span class="chip">{{ t.fmt }}</span> <span class="chip">{{ t.due_date|d }}</span> <span class="chip">{{ t.responsible }}</span> <span class="chip c-blue">Алгоритм · шагов: {{ t.algorithm|length }}</span>
+    {% if editable %}<div class="actions"><a class="btn sm primary" href="{{ url_for('pvd.task_edit', task_id=t.id) }}">Редактировать</a>{{ m.post(url_for('pvd.task_delete', task_id=t.id), 'Удалить', 'btn sm danger', 'Удалить задачу из плана?') }}</div>{% endif %}
+  </div>
+  {% else %}<p class="hint">Пока нет задач, сформированных по должностной инструкции или перенесённых из карты KPI.</p>{% endfor %}
+  {% if editable %}<div class="actions"><a class="btn sm" href="{{ url_for('pvd.task_new', plan_id=plan.id) }}">+ Задача руководителя</a></div>{% endif %}
+</div>
+{% endblock %}

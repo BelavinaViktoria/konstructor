@@ -1,0 +1,13 @@
+[project]
+name = "konstruktor-pvd-ipr"
+version = "0.1.0"
+description = "Конструктор ПВД и ИПР: адаптация новых сотрудников и развитие кадрового резерва"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"

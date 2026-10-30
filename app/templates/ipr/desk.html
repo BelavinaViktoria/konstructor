@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+{% set labels = {'department': 'Департамент', 'upr': 'Управление', 'otd': 'Отдел', 'target': 'Потенциальная должность', 'manager_name': 'Руководитель', 'site': 'Площадка', 'initiator': 'Инициатор', 'position_holder': 'Чью должность', 'experience': 'Стаж'} %}
+<div class="page-head"><div><h2>Рабочий стол по ИПР</h2><p>Всего планов: {{ total }}.</p></div>{% if current_user.role == 'learning' %}<a class="btn primary" href="{{ url_for('ipr.new') }}">Создать ИПР</a>{% endif %}</div>
+<div class="stats">{% for s in statuses %}<a class="stat" href="{{ url_for('ipr.desk', status=s) }}"><b>{{ stats[s] }}</b><span>{{ s }}</span></a>{% endfor %}</div>
+<form class="card" method="get"><div class="fields">
+  <div class="f"><label>ФИО</label><input name="q" value="{{ request.args.get('q', '') }}"></div>
+  <div class="f"><label>Статус</label><select name="status">{{ m.options(statuses, request.args.get('status', '')) }}</select></div>
+  {% for key, label in labels.items() %}<div class="f"><label>{{ label }}</label><select name="{{ key }}">{{ m.options(opts[key], request.args.get(key, '')) }}</select></div>{% endfor %}
+  <div class="f"><label>Дата подачи в КР с</label><input type="date" name="applied_from" value="{{ request.args.get('applied_from', '') }}"></div>
+  <div class="f"><label>Дата подачи в КР по</label><input type="date" name="applied_to" value="{{ request.args.get('applied_to', '') }}"></div>
+  <div class="f"><label>Первичная встреча с</label><input type="date" name="first_from" value="{{ request.args.get('first_from', '') }}"></div>
+  <div class="f"><label>Первичная встреча по</label><input type="date" name="first_to" value="{{ request.args.get('first_to', '') }}"></div>
+  <div class="f"><label>Повторная встреча с</label><input type="date" name="m2_from" value="{{ request.args.get('m2_from', '') }}"></div>
+  <div class="f"><label>Повторная встреча по</label><input type="date" name="m2_to" value="{{ request.args.get('m2_to', '') }}"></div>
+</div><p class="hint">Фильтры по встречам учитывают перенесённые даты.</p><div class="actions"><button class="btn primary">Применить</button><a class="btn" href="{{ url_for('ipr.desk') }}">Сбросить</a></div></form>
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Резервист</th><th>Целевая должность</th><th>Руководитель</th><th>Статус</th><th>Первичная</th><th>Повторная</th><th>Практика</th><th>Курсы</th><th></th></tr></thead><tbody>
+{% for r in rows %}{% set i = r.ipr %}<tr><td><b>{{ i.fio }}</b><br><span class="hint">{{ i.position }}</span></td><td>{{ i.target }}</td><td>{{ i.manager_name or '—' }}</td><td><span class="chip {{ cat.IPR_STATUS_CHIP[i.status] }}">{{ i.status }}</span></td><td>{{ i.start_date|d }}</td><td>{{ r.m2|d }}</td>
+<td>{{ r.avg.practice if r.avg.practice is not none else '—' }}{{ '%' if r.avg.practice is not none }}</td><td>{{ r.avg.courses if r.avg.courses is not none else '—' }}{{ '%' if r.avg.courses is not none }}</td>
+<td><a class="btn sm" href="{{ url_for('ipr.card', ipr_id=i.id) }}">Карточка</a>{% if current_user.role == 'learning' %} <a class="btn sm" href="{{ url_for('ipr.build', ipr_id=i.id) }}">Конструктор</a>{% endif %}</td></tr>
+{% else %}<tr><td colspan="9" class="empty">Ничего не найдено</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

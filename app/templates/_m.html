@@ -1,0 +1,6 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+{% macro chip(pair) %}<span class="chip {{ pair[0] }}">{{ pair[1] }}</span>{% endmacro %}
+{% macro post(url, label, cls='btn sm', confirm=None) %}<form class="inline" method="post" action="{{ url }}"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}>{{ csrf() }}<button class="{{ cls }}">{{ label }}</button></form>{% endmacro %}
+{% macro options(values, current='', blank='Все') %}<option value="">{{ blank }}</option>{% for v in values %}<option value="{{ v }}" {{ 'selected' if v == current }}>{{ v }}</option>{% endfor %}{% endmacro %}
+{% macro log(rows) %}{% for row in rows %}<div class="log"><b>{{ row.actor }}</b>: {{ row.text }}<span>{{ row.ts.strftime('%d.%m.%Y %H:%M') }}</span></div>{% else %}<div class="hint">Действий пока нет</div>{% endfor %}{% endmacro %}
+{% macro risk_chip(risk) %}<span class="chip {{ risk.chip }}">{{ risk.level }}{% if risk.score %} · {{ risk.score }}{% endif %}</span>{% endmacro %}

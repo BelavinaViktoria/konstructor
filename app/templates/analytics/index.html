@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Аналитика и отчётность</h2><p>Срезы по адаптации с любой комбинацией фильтров. Анализ ищет закономерности в выборке и показывает проблемные зоны с конкретными действиями.</p></div>
+<div class="actions"><a class="btn" href="{{ url_for('analytics.export_csv') }}?{{ query }}">Выгрузить в CSV</a><a class="btn" href="{{ url_for('analytics.report') }}?{{ query }}" target="_blank" rel="noopener">Отчёт с анализом</a>
+<a class="btn ai" href="{{ url_for('analytics.index') }}?{{ query }}{{ '&' if query }}analyze=1#analysis">Проанализировать отчёт</a></div></div>
+<div class="pick-row">{% for key, label in presets %}<a class="pick {{ 'on' if key == preset }}" href="{{ url_for('analytics.index', preset=key if key != 'all' else None) }}">{{ label }}</a>{% endfor %}</div>
+<form class="card" method="get"><div class="fields">
+  <div class="f"><label>Считать период по</label><select name="date_by"><option value="hire" {{ 'selected' if filters.date_by == 'hire' }}>Дате приёма</option><option value="left" {{ 'selected' if filters.date_by == 'left' }}>Дате увольнения</option></select></div>
+  <div class="f"><label>Период с</label><input type="date" name="from" value="{{ filters['from'] }}"></div>
+  <div class="f"><label>Период по</label><input type="date" name="to" value="{{ filters.to }}"></div>
+  {% for key, label in fields %}<div class="f"><label>{{ label }}</label><select name="{{ key }}">{{ m.options(options[key], filters[key]) }}</select></div>{% endfor %}
+  <div class="f"><label>Исход</label><select name="out"><option value="">Все</option><option value="gone" {{ 'selected' if filters.out == 'gone' }}>Покинули компанию</option><option value="stay" {{ 'selected' if filters.out == 'stay' }}>Остались</option>{% for o in cat.OUTCOMES %}<option {{ 'selected' if filters.out == o }}>{{ o }}</option>{% endfor %}</select></div>
+  <div class="f"><label>Уровень риска</label><select name="lvl">{{ m.options(['Высокий', 'Средний', 'Низкий', 'Нет'], filters.lvl) }}</select></div>
+  <div class="f"><label>Просрочки</label><select name="over"><option value="">Все</option><option value="yes" {{ 'selected' if filters.over == 'yes' }}>Есть</option><option value="no" {{ 'selected' if filters.over == 'no' }}>Нет</option></select></div>
+</div><div class="actions"><button class="btn primary">Применить</button><a class="btn" href="{{ url_for('analytics.index') }}">Сбросить всё</a></div></form>
+<div class="stats">
+  <div class="stat"><b>{{ stats.total }}</b><span>В выборке</span></div><div class="stat red"><b>{{ stats.gone }}</b><span>Покинули компанию</span></div>
+  <div class="stat green"><b>{{ stats.retention }}%</b><span>Удержание</span></div><div class="stat"><b>{{ stats.avg_plan }}%</b><span>Среднее выполнение ПВД</span></div>
+  <div class="stat red"><b>{{ stats.high_risk }}</b><span>Высокий риск</span></div><div class="stat amber"><b>{{ stats.avg_react }}</b><span>Средняя реакция, дней</span></div>
+</div>
+<div class="grid-2">
+  <div class="card"><h3>Ушедшие по отделам</h3>{% for name, n, w in bars_otd %}<div class="bar"><span>{{ name }}</span><i style="width:{{ w }}%"></i><b>{{ n }}</b></div>{% else %}<p class="hint">Нет данных</p>{% endfor %}</div>
+  <div class="card"><h3>Ушедшие по руководителям</h3>{% for name, n, w in bars_manager %}<div class="bar"><span>{{ name }}</span><i style="width:{{ w }}%"></i><b>{{ n }}</b></div>{% else %}<p class="hint">Нет данных</p>{% endfor %}</div>
+</div>
+{% if findings is not none %}
+<div class="card" id="analysis"><h3>Анализ: проблемные зоны · наблюдений {{ findings|length }}</h3>
+  {% if summary %}<div class="note info"><b>Вывод ИИ:</b> {{ summary }}</div>{% endif %}
+  {% include "analytics/_findings.html" %}
+</div>{% endif %}
+<h3 style="margin-bottom:10px">Результат выборки: {{ rows|length }}</h3>
+{% include "analytics/_rows.html" %}
+{% endblock %}

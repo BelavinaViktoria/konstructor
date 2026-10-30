@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="card login">
+  <h3>Вход</h3>
+  <form method="post">{{ m.csrf() }}
+    <div class="fields">
+      <div class="f full"><label for="email">Почта</label><input id="email" name="email" type="email" autocomplete="username" required autofocus></div>
+      <div class="f full"><label for="password">Пароль</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+    </div>
+    <div class="actions"><button class="btn primary">Войти</button></div>
+  </form>
+</div>
+{% endblock %}

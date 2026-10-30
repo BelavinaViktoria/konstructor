@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Итоги испытательного срока</h2><p>{{ plan.fio }}, {{ plan.position }}. Прогресс плана: {{ progress }}%.</p></div><a class="btn" href="{{ url_for('pvd.plan_view', plan_id=plan.id) }}">К плану</a></div>
+<div class="grid-2">
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Цель</th><th>Срок</th><th>Итог</th></tr></thead><tbody>{% for g in plan.goals %}{% set st = cat.GOAL_STATUS[g.status] %}<tr><td>{{ g.title }}</td><td>{{ g.due_date|d }}</td><td><span class="chip {{ st[0] }}">{{ st[1] }}</span></td></tr>{% else %}<tr><td colspan="3" class="empty">Целей нет</td></tr>{% endfor %}</tbody></table></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Задача</th><th>Срок</th><th>Статус</th></tr></thead><tbody>{% for t in plan.tasks %}{% set st = cat.TASK_STATUS[statuses[t.id]] %}<tr><td>{{ t.title }}</td><td>{{ t.due_date|d }}</td><td><span class="chip {{ st[0] }}">{{ st[1] }}</span></td></tr>{% else %}<tr><td colspan="3" class="empty">Задач нет</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% if plan.final_at %}<div class="note info">Итог зафиксирован {{ plan.final_at.strftime('%d.%m.%Y') }}: {{ plan.status }}.</div>{% endif %}
+<form class="card" method="post">{{ m.csrf() }}
+  <h3>Вывод</h3>
+  <div class="actions"><label><input type="radio" name="verdict" value="ok"> ИС пройден</label><label><input type="radio" name="verdict" value="no"> ИС не пройден</label></div>
+  <h3 style="margin-top:14px">Увольнение</h3><p class="hint">Обязательно, если ИС не пройден.</p>
+  <div class="fields">
+    <div class="f"><label>Дата увольнения</label><input type="date" name="dismissal_date"></div>
+    <div class="f"><label>Инициатор</label><select name="initiator">{{ m.options(cat.DISMISSAL_INITIATORS, '', '—') }}</select></div>
+    <div class="f"><label>Причина</label><select name="reason">{{ m.options(cat.DISMISSAL_REASONS, '', '—') }}</select></div>
+    <div class="f full"><label>Комментарий</label><textarea name="comment"></textarea></div>
+  </div>
+  <div class="actions"><button class="btn primary">Зафиксировать итог</button></div>
+</form>
+{% endblock %}

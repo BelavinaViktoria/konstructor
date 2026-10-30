@@ -1,0 +1,12 @@
+<div class="fields">
+  <div class="f"><label>ФИО</label><input name="fio" value="{{ plan.fio if plan else '' }}" required></div>
+  <div class="f"><label>Должность</label><input name="position" list="positions" value="{{ plan.position if plan else '' }}"><datalist id="positions">{% for p in positions %}<option value="{{ p.name }}">{% endfor %}</datalist></div>
+  <div class="f"><label>Департамент</label><input name="department" value="{{ plan.department if plan else '' }}"></div>
+  <div class="f"><label>Управление</label><input name="upr" value="{{ plan.upr if plan else '' }}"></div>
+  <div class="f"><label>Отдел</label><input name="otd" value="{{ plan.otd if plan else '' }}"></div>
+  <div class="f"><label>Площадка</label><input name="site" value="{{ plan.site if plan else '' }}"></div>
+  <div class="f"><label>Дата приёма</label><input type="date" name="hire_date" value="{{ plan.hire_date.isoformat() if plan and plan.hire_date else '' }}"></div>
+  <div class="f"><label>Руководитель</label><select name="manager_id"><option value="">— выберите —</option>{% for u in managers %}<option value="{{ u.id }}" {{ 'selected' if plan and plan.manager_id == u.id }}>{{ u.full_name }} | {{ u.email }}</option>{% endfor %}</select>
+    {% if plan and not plan.manager and plan.manager_name %}<span class="hint">Из Потока: {{ plan.manager_name }} {{ plan.manager_email }}</span>{% endif %}</div>
+  <div class="f"><label>Учётная запись новичка</label><select name="employee_id"><option value="">— нет —</option>{% for u in newbies %}<option value="{{ u.id }}" {{ 'selected' if plan and plan.employee_id == u.id }}>{{ u.full_name }}</option>{% endfor %}</select></div>
+</div>

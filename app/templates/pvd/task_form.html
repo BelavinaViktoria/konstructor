@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Конструктор задачи</h2><p>{{ plan.fio }}</p></div><a class="btn" href="{{ back }}">Назад</a></div>
+<form class="card" method="post">{{ m.csrf() }}
+  <div class="fields">
+    <div class="f full"><label>Задача</label><input name="title" value="{{ task.title or '' }}" required></div>
+    <div class="f full"><label>Описание</label><textarea name="description">{{ task.description or '' }}</textarea></div>
+    <div class="f"><label>Формат</label><input name="fmt" value="{{ task.fmt or 'Документ' }}"></div>
+    <div class="f"><label>Срок (период)</label><select name="term"><option value="">— конкретная дата —</option>{% for t in cat.TERMS %}<option {{ 'selected' if t == task.term }}>{{ t }}</option>{% endfor %}</select></div>
+    <div class="f"><label>Срок (дата)</label><input type="date" name="due_date" value="{{ task.due_date.isoformat() if task.due_date else '' }}"></div>
+    <div class="f"><label>Ответственный</label><input name="responsible" value="{{ task.responsible or '' }}"></div>
+    <div class="f full"><label>Алгоритм выполнения: каждый шаг с новой строки (обязательно)</label><textarea name="algorithm" rows="7" required>{{ (task.algorithm or [])|join('\n') }}</textarea></div>
+  </div>
+  <div class="actions"><button class="btn primary">Сохранить</button></div>
+</form>
+{% endblock %}

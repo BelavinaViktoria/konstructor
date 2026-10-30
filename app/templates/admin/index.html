@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% import "_m.html" as m %}
+{% block content %}
+<div class="page-head"><div><h2>Администрирование</h2><p>Пользователи, библиотека задач, тексты писем, интеграции и журнал действий.</p></div></div>
+<div class="pick-row"><a class="pick" href="#users">Пользователи</a><a class="pick" href="#library">Библиотека задач</a><a class="pick" href="#preboarding">Письмо о пребординге</a><a class="pick" href="#integrations">Интеграции</a><a class="pick" href="#registry">Реестр уведомлений</a><a class="pick" href="#surveys">Опросы</a><a class="pick" href="#log">Журнал</a></div>
+
+<div class="card" id="users"><h3>Пользователи</h3>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>ФИО</th><th>Почта</th><th>Роль</th><th>Статус</th><th></th></tr></thead><tbody>
+  {% for u in users %}<tr><td>{{ u.full_name }}</td><td>{{ u.email }}</td><td>{{ u.role_label }}</td><td>{{ 'Активен' if u.active else 'Отключён' }}</td><td>{{ m.post(url_for('admin.user_toggle', user_id=u.id), 'Отключить' if u.active else 'Включить') }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  <form method="post" action="{{ url_for('admin.user_create') }}">{{ m.csrf() }}<div class="fields">
+    <div class="f"><label>ФИО</label><input name="full_name" required></div><div class="f"><label>Почта</label><input type="email" name="email" required></div>
+    <div class="f"><label>Роль</label><select name="role">{% for key, label in roles.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="f"><label>Временный пароль (от 10 символов)</label><input type="password" name="password" autocomplete="new-password" minlength="10" required></div>
+  </div><div class="actions"><button class="btn primary">Создать пользователя</button></div></form>
+</div>
+
+<div class="card" id="library"><h3>Библиотека задач</h3><div class="actions" style="margin-bottom:10px"><a class="btn sm primary" href="{{ url_for('admin.library_new') }}">+ Задача</a></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Семейство</th><th>Задача</th><th>Формат</th><th>Срок</th><th>Алгоритм</th><th></th></tr></thead><tbody>
+  {% for t in library %}<tr><td>{{ cat.FAMILIES.get(t.family, t.family) }}</td><td>{{ t.title }}</td><td>{{ t.fmt }}</td><td>{{ t.term }}</td><td>{{ t.algorithm|length }} шагов</td><td><a class="btn sm" href="{{ url_for('admin.library_edit', item_id=t.id) }}">Изменить</a> {{ m.post(url_for('admin.library_delete', item_id=t.id), 'Удалить', 'btn sm danger', 'Удалить задачу из библиотеки?') }}</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+
+<div class="card" id="preboarding"><h3>Письмо о пребординге</h3><p class="hint">Переменные: {% raw %}{{ФИО}}, {{ДатаПриёма}}, {{Должность}}, {{Руководитель}}{% endraw %}</p><form method="post" action="{{ url_for('admin.preboarding') }}">{{ m.csrf() }}<div class="fields"><div class="f full"><label>Тема</label><input name="subject" value="{{ pre_subject }}"></div><div class="f full"><label>Текст</label><textarea name="body" rows="10">{{ pre_body }}</textarea></div></div><div class="actions"><button class="btn primary">Сохранить</button></div></form></div>
+
+<div class="card" id="integrations"><h3>Интеграции</h3><p class="hint">Ключи хранятся в настройках сервера (файл .env), а не в базе и не в коде.</p>{% for name, on in integrations %}<div class="log">{{ name }} <span class="chip {{ 'c-green' if on else 'c-gray' }}">{{ 'Включена' if on else 'Выключена' }}</span></div>{% endfor %}</div>
+
+<div class="card" id="registry"><h3>Реестр уведомлений · {{ cat.NOTIFICATIONS|length }}</h3><div class="tbl-wrap"><table class="tbl"><thead><tr><th>№</th><th>Событие</th><th>Получатель</th><th>Тема</th></tr></thead><tbody>{% for n in cat.NOTIFICATIONS %}<tr><td>{{ loop.index }}</td><td>{{ n[0] }}</td><td>{{ n[1] }}</td><td>{{ n[2] }}</td></tr>{% endfor %}</tbody></table></div></div>
+
+<div class="card" id="surveys"><h3>Опросы и анкеты</h3>{% for key, s in cat.SURVEYS.items() %}<details><summary>{{ s.name }}</summary><ol class="alg">{% for q in s.q if q.ty != 'intro' %}<li>{{ q.t }}{% if q.opts %} <span class="hint">({{ q.opts|join(' / ') }})</span>{% endif %}</li>{% endfor %}</ol></details>{% endfor %}</div>
+
+<div class="card" id="log"><h3>Журнал действий</h3>{{ m.log(log) }}</div>
+{% endblock %}

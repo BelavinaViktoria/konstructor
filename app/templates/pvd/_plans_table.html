@@ -1,0 +1,13 @@
+{% import "_m.html" as m %}
+<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Сотрудник</th><th>Должность</th><th>Площадка</th><th>Дата приёма</th><th>Руководитель</th><th>Статус</th><th>Прогресс</th><th>Просрочки</th><th>Риск</th><th>Сигналы</th><th></th></tr></thead><tbody>
+{% for r in rows %}{% set p = r.plan %}
+<tr><td><b>{{ p.fio }}</b>{% if p.source == 'potok' and p.status == 'Черновик' %}<br><span class="chip c-teal">Из Потока</span>{% endif %}</td>
+<td>{{ p.position }}</td><td>{{ p.site or '—' }}</td><td>{{ p.hire_date|d }}</td><td>{{ p.manager_name or '—' }}</td>
+<td><span class="chip {{ cat.PLAN_STATUS_CHIP[p.status] }}">{{ p.status }}</span></td><td>{{ r.progress }}%</td><td>{{ r.risk.facts.overdue or '—' }}</td>
+<td>{{ m.risk_chip(r.risk) }}</td><td>{{ r.open_signals or '—' }}</td>
+<td>
+{% if current_user.role in ('recruiter', 'learning') %}<a class="btn sm" href="{{ url_for('pvd.build', plan_id=p.id) }}">Конструктор</a>{% endif %}
+{% if current_user.role == 'manager' %}<a class="btn sm" href="{{ url_for('pvd.goals', plan_id=p.id) }}">Цели</a>{% endif %}
+<a class="btn sm" href="{{ url_for('pvd.plan_view', plan_id=p.id) }}">План</a></td></tr>
+{% else %}<tr><td colspan="11" class="empty">Ничего не найдено</td></tr>{% endfor %}
+</tbody></table></div>

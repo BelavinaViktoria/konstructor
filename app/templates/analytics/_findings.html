@@ -1,0 +1,5 @@
+{% for f in findings %}
+<div class="finding {{ f.level }}"><b>{{ loop.index }}. {{ f.title }}</b> <span class="chip {{ 'c-red' if f.level == 'критический' else 'c-orange' if f.level == 'высокий' else 'c-amber' }}">{{ f.level }}</span>
+  <p>{{ f.detail }}</p><div class="rec"><b>Что с этим делать:</b> {{ f.rec }}</div></div>
+{% else %}<div class="note info">Закономерностей не выявлено: увольнений мало или они распределены равномерно. Системной проблемы в этом срезе нет.</div>{% endfor %}
+<p class="hint"><b>Ограничение:</b> выводы описывают корреляции в данных, а не доказанные причины. Концентрация увольнений вокруг человека: повод разобраться, а не основание для кадрового решения.</p>
